@@ -1,0 +1,47 @@
+# Full path to the directory where you want to save the combined CSV
+$outputDir = 'C:\Users\Marius Savatier\PycharmProjects\Thesis\17_data_new'
+$outputPath = Join-Path -Path $outputDir -ChildPath "pair_data.csv"
+
+# Check and create the output directory if it doesn't exist
+if (-not (Test-Path $outputDir)) {
+    New-Item -ItemType Directory -Force -Path $outputDir
+}
+
+$fileCount = 0
+$firstFile = $true
+
+try {
+    # Create StreamWriter for the output file
+    $writer = [System.IO.StreamWriter]::new($outputPath)
+
+    Get-ChildItem (Join-Path -Path $outputDir -ChildPath "final_data_filled\*.csv") | ForEach-Object {
+        $filePath = $_.FullName
+        $isFirstLine = $true
+
+        try {
+            $reader = [System.IO.StreamReader]::new($filePath)
+
+            while ($null -ne ($line = $reader.ReadLine())) {
+                # Check if it's the first file or if it's not the first line of subsequent files
+                if ($firstFile -or -not $isFirstLine) {
+                    $writer.WriteLine($line)
+                }
+                $isFirstLine = $false
+            }
+        }
+        finally {
+            $reader.Close()
+        }
+
+        $firstFile = $false
+        $fileCount += 1
+        Write-Host ("Processed file {0}: {1}" -f $fileCount, $_.Name)
+    }
+}
+finally {
+    if ($null -ne $writer) {
+        $writer.Close()
+    }
+}
+
+Write-Host "Completed processing $fileCount files."
